@@ -1,410 +1,1092 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>দোকান ট্র্যাকার</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #f0f4f8;
-    color: #1a1a2e;
-    min-height: 100vh;
-  }
-  .app {
-    max-width: 480px;
-    margin: 0 auto;
-    padding: 1rem;
-  }
-  .header {
-    background: linear-gradient(135deg, #1565C0, #0D47A1);
-    color: white;
-    border-radius: 16px;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .header-icon { font-size: 28px; }
-  .header-title { font-size: 20px; font-weight: 600; }
-  .header-sub { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>GP SR Dokan Tracker & Route Navigator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  .tab-row {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 1rem;
-    background: white;
-    border-radius: 12px;
-    padding: 6px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-  }
-  .tab {
-    flex: 1;
-    padding: 9px 4px;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    font-size: 13px;
-    color: #555;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.15s;
-  }
-  .tab.active {
-    background: #1565C0;
-    color: white;
-  }
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            gpBlue: '#0070BA',
+            gpDark: '#0A3B66',
+            gpCyan: '#00A9E0',
+            gpGreen: '#00A859',
+            gpCard: '#F8FAFC'
+          },
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans Bengali', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
 
-  .card {
-    background: white;
-    border-radius: 14px;
-    padding: 1.25rem;
-    margin-bottom: 10px;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
-  }
-  .card-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: #1a1a2e;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  input[type=text] {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1.5px solid #e0e0e0;
-    border-radius: 10px;
-    font-size: 14px;
-    margin-bottom: 10px;
-    outline: none;
-    transition: border-color 0.15s;
-    color: #1a1a2e;
-    background: #fafafa;
-  }
-  input[type=text]:focus { border-color: #1565C0; background: white; }
-
-  .btn-main {
-    width: 100%;
-    padding: 12px;
-    background: #1565C0;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: background 0.15s;
-  }
-  .btn-main:hover { background: #0D47A1; }
-  .btn-main:active { transform: scale(0.98); }
-
-  .hint {
-    font-size: 12px;
-    color: #888;
-    text-align: center;
-    margin-top: 8px;
-  }
-
-  .status-bar {
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-    font-weight: 500;
-  }
-  .status-ok { background: #E8F5E9; color: #2E7D32; border: 1px solid #C8E6C9; }
-  .status-loading { background: #E3F2FD; color: #1565C0; border: 1px solid #BBDEFB; }
-  .status-err { background: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; }
-
-  .err-msg {
-    background: #FFEBEE;
-    color: #C62828;
-    border: 1px solid #FFCDD2;
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 13px;
-    margin-bottom: 10px;
-    display: none;
-  }
-
-  .shop-list { display: flex; flex-direction: column; gap: 8px; }
-  .shop-item {
-    background: white;
-    border: 1.5px solid #eee;
-    border-radius: 12px;
-    padding: 12px 14px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-    transition: box-shadow 0.15s;
-  }
-  .shop-item:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-  .shop-item.nearby { border-color: #A5D6A7; background: #F1F8E9; }
-
-  .shop-avatar {
-    width: 42px; height: 42px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px; flex-shrink: 0;
-  }
-  .shop-info { flex: 1; min-width: 0; }
-  .shop-name {
-    font-size: 14px; font-weight: 600; color: #1a1a2e;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .shop-note { font-size: 12px; color: #777; margin-top: 2px; }
-  .shop-dist-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
-  .badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    font-size: 11px; font-weight: 600;
-    padding: 3px 10px; border-radius: 20px;
-  }
-  .badge-near { background: #C8E6C9; color: #1B5E20; }
-  .badge-mid  { background: #FFF9C4; color: #F57F17; }
-  .badge-far  { background: #FFCDD2; color: #B71C1C; }
-
-  .btn-del {
-    background: #FFEBEE; color: #C62828;
-    border: 1px solid #FFCDD2;
-    border-radius: 8px; font-size: 12px;
-    padding: 5px 10px; cursor: pointer;
-    flex-shrink: 0;
-    transition: background 0.15s;
-  }
-  .btn-del:hover { background: #FFCDD2; }
-
-  .empty {
-    text-align: center;
-    padding: 2.5rem 1rem;
-    color: #aaa;
-    font-size: 14px;
-  }
-  .empty-icon { font-size: 40px; margin-bottom: 8px; }
-
-  @media (prefers-color-scheme: dark) {
-    body { background: #111827; color: #f0f0f0; }
-    .card, .shop-item { background: #1f2937; border-color: #374151; }
-    input[type=text] { background: #1f2937; border-color: #374151; color: #f0f0f0; }
-    .tab-row { background: #1f2937; }
-    .tab { color: #9ca3af; }
-  }
-</style>
+  <style>
+    body {
+      font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .pulse-gps {
+      animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 169, 224, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(0, 169, 224, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 169, 224, 0); }
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 10px;
+    }
+  </style>
 </head>
-<body>
-<div class="app">
-  <div class="header">
-    <div class="header-icon">📍</div>
-    <div>
-      <div class="header-title">দোকান ট্র্যাকার</div>
-      <div class="header-sub">GPS দিয়ে দোকান সেভ ও খুঁজুন</div>
-    </div>
-  </div>
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-24">
 
-  <div class="tab-row">
-    <button class="tab active" onclick="showTab('nearby')" id="tab-nearby">📡 কাছের</button>
-    <button class="tab" onclick="showTab('add')" id="tab-add">➕ যোগ করুন</button>
-    <button class="tab" onclick="showTab('all')" id="tab-all">📋 সব দোকান</button>
-  </div>
-
-  <!-- কাছের দোকান -->
-  <div id="view-nearby">
-    <div id="loc-status" class="status-bar status-loading">
-      ⏳ লোকেশন নেওয়া হচ্ছে...
-    </div>
-    <div id="nearby-list">
-      <div class="empty"><div class="empty-icon">🗺️</div>লোকেশন পেলে কাছের দোকান দেখাবে</div>
-    </div>
-  </div>
-
-  <!-- নতুন দোকান যোগ -->
-  <div id="view-add" style="display:none">
-    <div class="card">
-      <div class="card-title">🏪 নতুন দোকান যোগ করুন</div>
-      <input type="text" id="inp-name" placeholder="দোকানের নাম (যেমন: রহিম মোবাইল)" />
-      <input type="text" id="inp-note" placeholder="বাড়তি তথ্য (যেমন: বাজারের পাশে) — ঐচ্ছিক" />
-      <div id="add-err" class="err-msg"></div>
-      <button class="btn-main" onclick="saveShop()">
-        📍 এখানে আছি — দোকান সেভ করুন
-      </button>
-      <div class="hint">সেভ করার সময় আপনার GPS লোকেশন নেওয়া হবে</div>
-    </div>
-  </div>
-
-  <!-- সব দোকান -->
-  <div id="view-all" style="display:none">
-    <div id="all-list">
-      <div class="empty"><div class="empty-icon">🏪</div>এখনো কোনো দোকান নেই</div>
-    </div>
-  </div>
-</div>
-
-<script>
-let shops = JSON.parse(localStorage.getItem('dokan_tracker_v1') || '[]');
-let userLat = null, userLon = null;
-
-const AVATARS = ['🏪','🛒','🏬','🏠','🏢','🏦'];
-const COLORS = [
-  {bg:'#E3F2FD',ico:'#1565C0'},
-  {bg:'#E8F5E9',ico:'#2E7D32'},
-  {bg:'#FFF3E0',ico:'#E65100'},
-  {bg:'#F3E5F5',ico:'#6A1B9A'},
-  {bg:'#FCE4EC',ico:'#880E4F'},
-  {bg:'#E0F7FA',ico:'#006064'},
-];
-
-function persist() { localStorage.setItem('dokan_tracker_v1', JSON.stringify(shops)); }
-
-function toRad(d) { return d * Math.PI / 180; }
-function calcDist(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-function fmtDist(m) {
-  if (m < 1000) return Math.round(m) + ' মি';
-  return (m/1000).toFixed(2) + ' কি.মি';
-}
-function badgeClass(m) {
-  if (m < 100) return 'badge-near';
-  if (m < 500) return 'badge-mid';
-  return 'badge-far';
-}
-
-function showTab(t) {
-  ['nearby','add','all'].forEach(v => {
-    document.getElementById('view-'+v).style.display = v===t ? 'block' : 'none';
-    document.getElementById('tab-'+v).className = 'tab' + (v===t ? ' active' : '');
-  });
-  if (t === 'all') renderAll();
-  if (t === 'nearby') renderNearby();
-}
-
-function shopCard(s, i, showDel, distM) {
-  const c = COLORS[i % COLORS.length];
-  const av = AVATARS[i % AVATARS.length];
-  const distBadge = distM !== undefined
-    ? `<span class="badge ${badgeClass(distM)}">📍 ${fmtDist(distM)}</span>`
-    : '';
-  const del = showDel
-    ? `<button class="btn-del" onclick="delShop(${i})">🗑️</button>`
-    : '';
-  const nearClass = (distM !== undefined && distM < 150) ? ' nearby' : '';
-  return `
-    <div class="shop-item${nearClass}">
-      <div class="shop-avatar" style="background:${c.bg};color:${c.ico}">${av}</div>
-      <div class="shop-info">
-        <div class="shop-name">${s.name}</div>
-        ${s.note ? `<div class="shop-note">${s.note}</div>` : ''}
-        <div class="shop-dist-row">${distBadge}</div>
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-30 bg-gradient-to-r from-gpDark via-gpBlue to-gpCyan text-white shadow-md">
+    <div class="max-w-md mx-auto px-4 py-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-sm">
+            <span class="text-gpBlue font-black text-xl tracking-tighter">gp</span>
+          </div>
+          <div>
+            <h1 class="text-base font-bold tracking-wide flex items-center gap-1.5">
+              SR Dokan Tracker
+              <span class="text-[10px] bg-emerald-400 text-slate-900 font-bold px-1.5 py-0.5 rounded-full">GPS Live</span>
+            </h1>
+            <p class="text-xs text-cyan-100" id="currentDayDisplay">আজকের দিন লোড হচ্ছে...</p>
+          </div>
+        </div>
+        <button onclick="openBackupModal()" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition text-sm flex items-center gap-1" title="ডাটা ব্যাকআপ ও লোড">
+          <i class="fa-solid fa-cloud-arrow-down"></i>
+          <span class="text-xs font-semibold">ব্যাকআপ</span>
+        </button>
       </div>
-      ${del}
-    </div>`;
-}
 
-function renderNearby() {
-  const el = document.getElementById('nearby-list');
-  if (!shops.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">➕</div>আগে কিছু দোকান যোগ করুন</div>';
-    return;
-  }
-  if (userLat === null) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">📡</div>লোকেশন পেলে দেখাবে...</div>';
-    return;
-  }
-  const sorted = shops
-    .map((s,i) => ({...s, idx:i, d: calcDist(userLat, userLon, s.lat, s.lon)}))
-    .sort((a,b) => a.d - b.d);
-  el.innerHTML = '<div class="shop-list">' +
-    sorted.map(s => shopCard(s, s.idx, false, s.d)).join('') +
-    '</div>';
-}
+      <!-- Live GPS Accuracy Pill in Header -->
+      <div class="mt-2.5 bg-black/25 backdrop-blur-sm rounded-xl p-2 flex items-center justify-between text-xs">
+        <div class="flex items-center space-x-2">
+          <span id="gpsIndicatorDot" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+          <span id="gpsStatusText" class="text-cyan-100 font-medium">জিপিএস রেডি হচ্ছে...</span>
+        </div>
+        <button onclick="refreshLiveGPS(true)" class="bg-white/20 hover:bg-white/30 active:scale-95 px-2.5 py-1 rounded-lg text-white font-medium flex items-center gap-1 transition">
+          <i class="fa-solid fa-arrows-rotate text-[11px]" id="gpsSpinner"></i>
+          <span>আপডেট</span>
+        </button>
+      </div>
+    </div>
+  </header>
 
-function renderAll() {
-  const el = document.getElementById('all-list');
-  if (!shops.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div>এখনো কোনো দোকান নেই</div>';
-    return;
-  }
-  const dist = (s) => userLat !== null ? calcDist(userLat, userLon, s.lat, s.lon) : undefined;
-  el.innerHTML = '<div class="shop-list">' +
-    shops.map((s,i) => shopCard(s, i, true, dist(s))).join('') +
-    '</div>';
-}
+  <main class="max-w-md mx-auto px-4 pt-3 space-y-3">
 
-function delShop(i) {
-  if (!confirm('"' + shops[i].name + '" মুছে ফেলবেন?')) return;
-  shops.splice(i, 1);
-  persist();
-  renderAll();
-}
+    <!-- Route Selector Filter -->
+    <div class="bg-white p-2 rounded-2xl shadow-sm border border-slate-200/80">
+      <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
+        <span><i class="fa-solid fa-route mr-1 text-gpBlue"></i> আজকের বিট / রুট নির্বাচন</span>
+        <span id="autoSelectedBadge" class="text-[10px] text-gpBlue bg-blue-50 px-1.5 py-0.5 rounded">অটো-সিলেক্টেড</span>
+      </div>
+      <div class="grid grid-cols-2 gap-1.5">
+        <!-- Route 1: Saturday, Monday, Wednesday -->
+        <button id="btnRouteA" onclick="selectRouteFilter('routeA')" class="flex flex-col text-left p-2.5 rounded-xl border transition relative overflow-hidden bg-gpBlue text-white border-gpBlue shadow-sm">
+          <div class="flex items-center justify-between w-full">
+            <span class="text-xs font-bold">রুট ১ (শনি, সোম, বুধ)</span>
+            <i class="fa-solid fa-check text-[10px]" id="checkRouteA"></i>
+          </div>
+          <span class="text-[11px] text-cyan-100 mt-0.5 font-medium truncate w-full">শোকলার হাট ➔ চৌধুরী মার্কেট</span>
+        </button>
 
-function saveShop() {
-  const name = document.getElementById('inp-name').value.trim();
-  const note = document.getElementById('inp-note').value.trim();
-  const errEl = document.getElementById('add-err');
-  if (!name) {
-    errEl.textContent = '⚠️ দোকানের নাম লিখুন';
-    errEl.style.display = 'block';
-    return;
-  }
-  errEl.style.display = 'none';
+        <!-- Route 2: Sunday, Tuesday, Thursday -->
+        <button id="btnRouteB" onclick="selectRouteFilter('routeB')" class="flex flex-col text-left p-2.5 rounded-xl border transition relative overflow-hidden bg-slate-50 text-slate-700 border-slate-200">
+          <div class="flex items-center justify-between w-full">
+            <span class="text-xs font-bold">রুট ২ (রবি, মঙ্গল, বৃহস্পতি)</span>
+            <i class="fa-solid fa-check text-[10px] hidden" id="checkRouteB"></i>
+          </div>
+          <span class="text-[11px] text-slate-500 mt-0.5 font-medium truncate w-full">জোড়বটতল ➔ বাদামতলী</span>
+        </button>
+      </div>
 
-  navigator.geolocation.getCurrentPosition(pos => {
-    shops.push({
-      name,
-      note,
-      lat: pos.coords.latitude,
-      lon: pos.coords.longitude,
-      acc: Math.round(pos.coords.accuracy),
-      saved: new Date().toLocaleString('bn-BD')
-    });
-    persist();
-    document.getElementById('inp-name').value = '';
-    document.getElementById('inp-note').value = '';
-    alert('✅ "' + name + '" সফলভাবে সেভ হয়েছে!');
-    showTab('nearby');
-  }, err => {
-    let msg = '⚠️ লোকেশন পাওয়া যাচ্ছে না।';
-    if (err.code === 1) msg += ' ব্রাউজারে লোকেশন অনুমতি দিন।';
-    else if (err.code === 2) msg += ' GPS সিগনাল নেই।';
-    else if (err.code === 3) msg += ' সময় শেষ হয়ে গেছে। আবার চেষ্টা করুন।';
-    errEl.textContent = msg;
-    errEl.style.display = 'block';
-  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
-}
+      <!-- Secondary Filter Row -->
+      <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 px-1 text-xs">
+        <div class="flex items-center space-x-1.5">
+          <button onclick="selectRouteFilter('all')" id="btnRouteAll" class="px-2.5 py-1 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 text-xs font-medium">সব দোকান</button>
+          <button onclick="sortShopsByDistance()" class="px-2.5 py-1 rounded-lg text-gpBlue bg-blue-50 hover:bg-blue-100 text-xs font-semibold flex items-center gap-1">
+            <i class="fa-solid fa-location-crosshairs text-[10px]"></i> কাছের দোকান আগে
+          </button>
+        </div>
+        <span id="shopCountBadge" class="text-slate-500 font-bold text-xs">০ টি দোকান</span>
+      </div>
+    </div>
 
-// GPS watch
-navigator.geolocation.watchPosition(pos => {
-  userLat = pos.coords.latitude;
-  userLon = pos.coords.longitude;
-  const acc = Math.round(pos.coords.accuracy);
-  const st = document.getElementById('loc-status');
-  st.className = 'status-bar status-ok';
-  st.innerHTML = '✅ লোকেশন পাওয়া গেছে &nbsp;|&nbsp; নির্ভুলতা: ±' + acc + ' মি';
-  renderNearby();
-}, err => {
-  const st = document.getElementById('loc-status');
-  st.className = 'status-bar status-err';
-  if (err.code === 1)
-    st.innerHTML = '❌ লোকেশন অনুমতি নেই — ব্রাউজারে অনুমতি দিন';
-  else
-    st.innerHTML = '❌ লোকেশন পাওয়া যাচ্ছে না';
-}, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
-</script>
+    <!-- Search Input -->
+    <div class="relative">
+      <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+      <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="দোকানের নাম, মালিক বা ফোন নম্বর দিয়ে খুঁজুন..." class="w-full pl-10 pr-10 py-2.5 bg-white rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-gpBlue/30 focus:border-gpBlue transition shadow-sm">
+      <button onclick="clearSearch()" id="clearSearchBtn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Add New Shop Quick Button Banner -->
+    <div class="bg-gradient-to-r from-slate-900 to-gpDark text-white p-3 rounded-2xl shadow flex items-center justify-between">
+      <div>
+        <h3 class="text-sm font-bold flex items-center gap-1.5">
+          <i class="fa-solid fa-store text-cyan-400"></i> নতুন দোকানে দাঁড়িয়েছেন?
+        </h3>
+        <p class="text-[11px] text-slate-300">বর্তমান নিখুঁত জিপিএস সহ এখনই যোগ করুন</p>
+      </div>
+      <button onclick="openAddShopModal()" class="bg-gpCyan hover:bg-cyan-500 active:scale-95 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-md transition">
+        <i class="fa-solid fa-plus text-sm"></i>
+        <span>দোকান যোগ</span>
+      </button>
+    </div>
+
+    <!-- Shop Cards List Container -->
+    <div id="shopsContainer" class="space-y-2.5">
+      <!-- Dynamic Shop Cards will be injected here -->
+    </div>
+
+    <!-- Empty State View -->
+    <div id="emptyState" class="hidden py-12 px-4 text-center bg-white rounded-2xl border border-dashed border-slate-300">
+      <div class="w-14 h-14 bg-blue-50 text-gpBlue rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+        <i class="fa-solid fa-shop-slash"></i>
+      </div>
+      <h3 class="text-sm font-bold text-slate-700">এই রুটে কোনো দোকান পাওয়া যায়নি</h3>
+      <p class="text-xs text-slate-500 mt-1 max-w-xs mx-auto">নতুন দোকান যোগ করতে উপরের "দোকান যোগ" বাটনে চাপ দিন।</p>
+      <button onclick="openAddShopModal()" class="mt-3.5 bg-gpBlue text-white text-xs font-semibold px-4 py-2 rounded-xl shadow">
+        + দোকান যুক্ত করুন
+      </button>
+    </div>
+
+  </main>
+
+  <!-- ADD / EDIT SHOP MODAL -->
+  <div id="shopModal" class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92vh] flex flex-col overflow-hidden animate-slide-up">
+      
+      <!-- Modal Header -->
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div>
+          <h3 id="modalTitle" class="font-bold text-slate-900 text-base flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-gpBlue"></span>
+            নতুন দোকান যোগ করুন
+          </h3>
+          <p class="text-xs text-slate-500">নিখুঁত জিপিএস লোকেশন ও দোকানের তথ্য দিন</p>
+        </div>
+        <button onclick="closeShopModal()" class="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-300 flex items-center justify-center text-slate-600 transition">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Modal Form Body -->
+      <form id="shopForm" onsubmit="handleSaveShop(event)" class="p-5 overflow-y-auto space-y-3.5 flex-1">
+        <input type="hidden" id="editShopId">
+
+        <!-- Route Selection -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">রুট / বিট নির্ধারণ করুন *</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="cursor-pointer border rounded-xl p-2.5 flex items-center space-x-2 text-xs font-medium border-slate-200 has-[:checked]:border-gpBlue has-[:checked]:bg-blue-50 has-[:checked]:text-gpBlue">
+              <input type="radio" name="modalRoute" value="routeA" checked class="accent-gpBlue">
+              <div>
+                <p class="font-bold text-slate-800">রুট ১ (শনি, সোম, বুধ)</p>
+                <p class="text-[10px] text-slate-500">শোকলার হাট - চৌধুরী মার্কেট</p>
+              </div>
+            </label>
+            <label class="cursor-pointer border rounded-xl p-2.5 flex items-center space-x-2 text-xs font-medium border-slate-200 has-[:checked]:border-gpBlue has-[:checked]:bg-blue-50 has-[:checked]:text-gpBlue">
+              <input type="radio" name="modalRoute" value="routeB" class="accent-gpBlue">
+              <div>
+                <p class="font-bold text-slate-800">রুট ২ (রবি, মঙ্গল, বৃহস্পতি)</p>
+                <p class="text-[10px] text-slate-500">জোড়বটতল - বাদামতলী</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Shop Name -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">দোকানের নাম (Shop Name) *</label>
+          <div class="relative">
+            <i class="fa-solid fa-store absolute left-3 top-3 text-slate-400 text-xs"></i>
+            <input type="text" id="shopNameInput" required placeholder="যেমন: মা টেলিকম / ভাই ভাই ভ্যারাইটিজ" class="w-full pl-8 pr-3 py-2 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:ring-2 focus:ring-gpBlue/30 focus:border-gpBlue outline-none">
+          </div>
+        </div>
+
+        <!-- Owner Name & Phone Number -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">দোকানদারের নাম</label>
+            <div class="relative">
+              <i class="fa-solid fa-user absolute left-3 top-3 text-slate-400 text-xs"></i>
+              <input type="text" id="ownerNameInput" placeholder="যেমন: রহিম ভাই" class="w-full pl-8 pr-3 py-2 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:ring-2 focus:ring-gpBlue/30 focus:border-gpBlue outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">মোবাইল / লোড নম্বর *</label>
+            <div class="relative">
+              <i class="fa-solid fa-phone absolute left-3 top-3 text-slate-400 text-xs"></i>
+              <input type="tel" id="phoneNumberInput" required placeholder="017xxxxxxxx" class="w-full pl-8 pr-3 py-2 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:ring-2 focus:ring-gpBlue/30 focus:border-gpBlue outline-none font-mono">
+            </div>
+          </div>
+        </div>
+
+        <!-- GPS Coordinates Acquisition Section -->
+        <div class="bg-blue-50/70 p-3 rounded-2xl border border-blue-200/80">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-gpDark flex items-center gap-1.5">
+              <i class="fa-solid fa-satellite-dish text-gpBlue"></i> দোকান লোকেশন (High Accuracy)
+            </span>
+            <button type="button" onclick="captureFormLocation()" class="px-2.5 py-1 bg-gpBlue hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition shadow-sm">
+              <i class="fa-solid fa-crosshairs text-[11px]" id="captureGpsIcon"></i>
+              <span>কারেন্ট জিপিএস নিন</span>
+            </button>
+          </div>
+
+          <!-- GPS Readout Details -->
+          <div class="bg-white p-2.5 rounded-xl border border-blue-100 text-xs space-y-1">
+            <div class="flex items-center justify-between text-slate-600">
+              <span class="font-medium">একুরেসি (Accuracy):</span>
+              <span id="modalGpsAccuracy" class="font-bold text-slate-900">লোকেশন নেওয়া হয়নি</span>
+            </div>
+            <div class="flex items-center justify-between text-slate-600">
+              <span class="font-medium">ল্যাটিটিউড (Lat):</span>
+              <span id="modalGpsLat" class="font-mono text-slate-800">-</span>
+            </div>
+            <div class="flex items-center justify-between text-slate-600">
+              <span class="font-medium">লঙ্গিটিউড (Lng):</span>
+              <span id="modalGpsLng" class="font-mono text-slate-800">-</span>
+            </div>
+          </div>
+          <input type="hidden" id="formLat">
+          <input type="hidden" id="formLng">
+          <input type="hidden" id="formAccuracy">
+        </div>
+
+        <!-- Notes / Daily Transaction Memo -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">নোট / দেনা-পাওনা / ব্যালেন্স (ঐচ্ছিক)</label>
+          <textarea id="notesInput" rows="2" placeholder="যেমন: লোড দেওয়া হয়েছে ৫০০০ টাকা, বাকি ৫০০ টাকা, সিম চেয়েছে ৫টি..." class="w-full px-3 py-2 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:ring-2 focus:ring-gpBlue/30 focus:border-gpBlue outline-none"></textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="pt-2 flex items-center space-x-2">
+          <button type="button" onclick="closeShopModal()" class="w-1/3 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 transition">
+            বাতিল
+          </button>
+          <button type="submit" class="w-2/3 py-2.5 rounded-xl bg-gpBlue hover:bg-blue-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span id="saveButtonLabel">দোকান সেভ করুন</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- BACKUP & EXPORT MODAL -->
+  <div id="backupModal" class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl p-5 overflow-hidden">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="font-bold text-slate-900 text-base">ডাটা ব্যাকআপ ও এক্সপোর্ট</h3>
+          <p class="text-xs text-slate-500">আপনার সমস্ত দোকানের তালিকা নিরাপদ রাখুন</p>
+        </div>
+        <button onclick="closeBackupModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <div class="py-4 space-y-3">
+        <!-- Export to CSV / Excel -->
+        <button onclick="exportToCSV()" class="w-full flex items-center justify-between p-3 rounded-2xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/60 transition text-left">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg">
+              <i class="fa-solid fa-file-excel"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-slate-900">এক্সেল / CSV রিপোর্ট ডাউনলোড</h4>
+              <p class="text-[11px] text-slate-500">দোকানের নাম, নম্বর ও জিপিএস লিংক সহ</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-arrow-down text-emerald-700 text-xs"></i>
+        </button>
+
+        <!-- Export to JSON Backup -->
+        <button onclick="exportToJSON()" class="w-full flex items-center justify-between p-3 rounded-2xl border border-blue-200 bg-blue-50/50 hover:bg-blue-100/60 transition text-left">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gpBlue text-white flex items-center justify-center text-lg">
+              <i class="fa-solid fa-database"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-slate-900">সম্পূর্ণ ব্যাকআপ ফাইল (.json)</h4>
+              <p class="text-[11px] text-slate-500">পরবর্তীতে পুনরায় লোড করার জন্য সেভ রাখুন</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-download text-gpBlue text-xs"></i>
+        </button>
+
+        <!-- Import Backup -->
+        <div class="p-3 rounded-2xl border border-slate-200 bg-slate-50">
+          <h4 class="text-xs font-bold text-slate-900 mb-1">আগের ব্যাকআপ ফাইল রিস্টোর করুন</h4>
+          <p class="text-[11px] text-slate-500 mb-2">সেভ করা .json ফাইল সিলেক্ট করলে সব ডাটা চলে আসবে</p>
+          <input type="file" id="importFileInput" accept=".json" onchange="importFromJSON(event)" class="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-200 file:text-slate-800 hover:file:bg-slate-300 cursor-pointer w-full">
+        </div>
+      </div>
+
+      <button onclick="closeBackupModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-700 transition">
+        বন্ধ করুন
+      </button>
+    </div>
+  </div>
+
+  <!-- Bottom Sticky Action Bar -->
+  <footer class="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 py-2">
+    <div class="max-w-md mx-auto px-4 flex items-center justify-between">
+      <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="flex flex-col items-center text-slate-600 hover:text-gpBlue">
+        <i class="fa-solid fa-house text-sm"></i>
+        <span class="text-[10px] font-semibold mt-0.5">হোম</span>
+      </button>
+
+      <!-- Center Big Floating Add Shop Button -->
+      <button onclick="openAddShopModal()" class="flex items-center gap-1.5 bg-gradient-to-r from-gpBlue to-gpCyan text-white px-5 py-2.5 rounded-full shadow-lg shadow-blue-500/30 hover:scale-105 active:scale-95 transition">
+        <i class="fa-solid fa-location-dot text-sm text-yellow-300"></i>
+        <span class="text-xs font-bold">দোকান রেকর্ড করুন</span>
+      </button>
+
+      <button onclick="sortShopsByDistance()" class="flex flex-col items-center text-slate-600 hover:text-gpBlue">
+        <i class="fa-solid fa-compass text-sm"></i>
+        <span class="text-[10px] font-semibold mt-0.5">নিকটবর্তী</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Notification Toast Box (No alert() used) -->
+  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-medium transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-2 max-w-[90%]">
+    <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastMsg">বিজ্ঞপ্তি</span>
+  </div>
+
+  <script>
+    // In-memory data store with realistic initial shops for user's two beats
+    let dokanList = [
+      {
+        id: "shop_1",
+        name: "ভাই ভাই টেলিকম & ফ্লেক্সিলোড",
+        owner: "আবুল কালাম",
+        phone: "01711223344",
+        route: "routeA", // Shoklar Hat to Chowdhury Market
+        lat: 22.583410,
+        lng: 91.683520,
+        accuracy: 3.8,
+        notes: "প্রতি সোমবারে লোড বেশি লাগে। রিচার্জ ব্যালেন্স চেক করবেন।",
+        updatedAt: "2026-09-14T09:30:00"
+      },
+      {
+        id: "shop_2",
+        name: "চৌধুরী জেনারেল স্টোর & সিম পয়েন্ট",
+        owner: "নাসির চৌধুরী",
+        phone: "01722334455",
+        route: "routeA",
+        lat: 22.587820,
+        lng: 91.688110,
+        accuracy: 4.2,
+        notes: "সিম বিক্রির জন্য ৫টি ব্যানার লাগবে।",
+        updatedAt: "2026-09-14T10:15:00"
+      },
+      {
+        id: "shop_3",
+        name: "মা ভ্যারাইটিজ & বিকাশ/ফ্লেক্সি",
+        owner: "শফিক ভাই",
+        phone: "01733445566",
+        route: "routeB", // Jorbottol to Badamtoli
+        lat: 22.592100,
+        lng: 91.691230,
+        accuracy: 3.5,
+        notes: "জোড়বটতল মোড়ে প্রথম দোকান। সকাল ১০টায় খোলা হয়।",
+        updatedAt: "2026-09-14T11:00:00"
+      },
+      {
+        id: "shop_4",
+        name: "বাদামতলী রিচার্জ পয়েন্ট",
+        owner: "ফারুক আহমেদ",
+        phone: "01744556677",
+        route: "routeB",
+        lat: 22.598450,
+        lng: 91.699870,
+        accuracy: 4.0,
+        notes: "বকেয়া ৫০০ টাকা কালেকশন করা হয়েছে।",
+        updatedAt: "2026-09-14T12:00:00"
+      }
+    ];
+
+    // Global application state
+    let currentRouteFilter = 'routeA';
+    let searchQuery = '';
+    let currentLiveLocation = null;
+    let gpsWatcherId = null;
+
+    // Determines today's day and auto-selects appropriate beat
+    function initDayAndRoute() {
+      const today = new Date();
+      const dayIndex = today.getDay(); // 0 = Sunday, 1 = Monday, 2 = Tuesday, 3 = Wednesday, 4 = Thursday, 5 = Friday, 6 = Saturday
+      const daysBn = ["রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার"];
+      const dayName = daysBn[dayIndex];
+
+      const dayDisplay = document.getElementById("currentDayDisplay");
+
+      // Beat Logic:
+      // Route 1 (routeA): Saturday(6), Monday(1), Wednesday(3) -> শোকলার হাট to চৌধুরী মার্কেট
+      // Route 2 (routeB): Sunday(0), Tuesday(2), Thursday(4) -> জোড়বটতল to বাদামতলী
+      // Friday(5): Weekend / Weekly review
+      if (dayIndex === 6 || dayIndex === 1 || dayIndex === 3) {
+        currentRouteFilter = 'routeA';
+        dayDisplay.innerHTML = `<span class="font-bold text-white">${dayName}</span> • রুট ১: শোকলার হাট ➔ চৌধুরী মার্কেট`;
+      } else if (dayIndex === 0 || dayIndex === 2 || dayIndex === 4) {
+        currentRouteFilter = 'routeB';
+        dayDisplay.innerHTML = `<span class="font-bold text-white">${dayName}</span> • রুট ২: জোড়বটতল ➔ বাদামতলী`;
+      } else {
+        // Friday
+        currentRouteFilter = 'routeA';
+        dayDisplay.innerHTML = `<span class="font-bold text-white">${dayName}</span> • শুক্রবার (ছুটি/রিভিউ)`;
+      }
+
+      updateRouteFilterUI();
+    }
+
+    // High Accuracy GPS Acquisition
+    function startGPSWatcher() {
+      if (!navigator.geolocation) {
+        showToast("আপনার ডিভাইসে জিপিএস সাপোর্ট করছে না।", "error");
+        updateGPSUIStatus(false, "GPS নট সাপোর্টেড");
+        return;
+      }
+
+      const options = {
+        enableHighAccuracy: true, // Hardware GPS Chip invocation
+        timeout: 15000,
+        maximumAge: 0 // Do not use stale cache
+      };
+
+      // Get initial position
+      navigator.geolocation.getCurrentPosition(
+        (pos) => handleGPSUpdate(pos),
+        (err) => handleGPSError(err),
+        options
+      );
+
+      // Continuous watch for field walking/biking
+      gpsWatcherId = navigator.geolocation.watchPosition(
+        (pos) => handleGPSUpdate(pos),
+        (err) => console.log("Watch error", err),
+        options
+      );
+    }
+
+    function handleGPSUpdate(position) {
+      currentLiveLocation = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: position.coords.accuracy, // In meters
+        timestamp: position.timestamp
+      };
+
+      const accMeters = Math.round(position.coords.accuracy);
+      let qualityText = "";
+      let dotColor = "bg-emerald-400";
+
+      if (accMeters <= 6) {
+        qualityText = `নিখুঁত জিপিএস (±${accMeters}m 🟢)`;
+        dotColor = "bg-emerald-400";
+      } else if (accMeters <= 15) {
+        qualityText = `ভালো একুরেসি (±${accMeters}m 🟡)`;
+        dotColor = "bg-amber-400";
+      } else {
+        qualityText = `লো একুরেসি (±${accMeters}m 🟠)`;
+        dotColor = "bg-rose-400";
+      }
+
+      updateGPSUIStatus(true, qualityText, dotColor);
+      renderShops(); // Refresh distances relative to user
+    }
+
+    function handleGPSError(err) {
+      let msg = "লোকেশন পাওয়া যায়নি";
+      if (err.code === 1) msg = "জিপিএস পারমিশন ডিনাইড (অনুমতি দিন)";
+      else if (err.code === 2) msg = "জিপিএস সিগন্যাল দুর্বল";
+      else if (err.code === 3) msg = "জিপিএস টাইম-আউট";
+      updateGPSUIStatus(false, msg, "bg-rose-500");
+    }
+
+    function updateGPSUIStatus(isOnline, text, dotClass = "bg-slate-400") {
+      const dot = document.getElementById("gpsIndicatorDot");
+      const status = document.getElementById("gpsStatusText");
+      if (dot) {
+        dot.className = `w-2.5 h-2.5 rounded-full ${dotClass}`;
+      }
+      if (status) {
+        status.innerText = text;
+      }
+    }
+
+    function refreshLiveGPS(showFeedback = false) {
+      const spinner = document.getElementById("gpsSpinner");
+      if (spinner) spinner.classList.add("fa-spin");
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            handleGPSUpdate(pos);
+            if (spinner) spinner.classList.remove("fa-spin");
+            if (showFeedback) showToast(`জিপিএস একুরেসি: ±${Math.round(pos.coords.accuracy)} মিটার`, "success");
+          },
+          (err) => {
+            handleGPSError(err);
+            if (spinner) spinner.classList.remove("fa-spin");
+            if (showFeedback) showToast("জিপিএস লোকেশন রিফ্রেশ করা যায়নি। ফোনের GPS অন করুন।", "error");
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      }
+    }
+
+    // Distance in kilometers/meters between SR and retail store
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+      const R = 6371; // Earth radius in km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a =
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c; // in KM
+    }
+
+    function formatDistance(distKm) {
+      if (distKm === null || isNaN(distKm)) return "দূরত্ব অজ্ঞাত";
+      if (distKm < 1) {
+        return `${Math.round(distKm * 1000)} মিটার দূরে`;
+      }
+      return `${distKm.toFixed(2)} কিমি দূরে`;
+    }
+
+    function selectRouteFilter(route) {
+      currentRouteFilter = route;
+      updateRouteFilterUI();
+      renderShops();
+    }
+
+    function updateRouteFilterUI() {
+      const btnA = document.getElementById("btnRouteA");
+      const btnB = document.getElementById("btnRouteB");
+      const btnAll = document.getElementById("btnRouteAll");
+      const checkA = document.getElementById("checkRouteA");
+      const checkB = document.getElementById("checkRouteB");
+
+      // Reset
+      btnA.className = "flex flex-col text-left p-2.5 rounded-xl border transition relative overflow-hidden bg-slate-50 text-slate-700 border-slate-200";
+      btnB.className = "flex flex-col text-left p-2.5 rounded-xl border transition relative overflow-hidden bg-slate-50 text-slate-700 border-slate-200";
+      btnAll.className = "px-2.5 py-1 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 text-xs font-medium";
+      checkA.classList.add("hidden");
+      checkB.classList.add("hidden");
+
+      if (currentRouteFilter === 'routeA') {
+        btnA.className = "flex flex-col text-left p-2.5 rounded-xl border transition relative overflow-hidden bg-gpBlue text-white border-gpBlue shadow-sm";
+        checkA.classList.remove("hidden");
+      } else if (currentRouteFilter === 'routeB') {
+        btnB.className = "flex flex-col text-left p-2.5 rounded-xl border transition relative overflow-hidden bg-gpBlue text-white border-gpBlue shadow-sm";
+        checkB.classList.remove("hidden");
+      } else {
+        btnAll.className = "px-2.5 py-1 rounded-lg text-white bg-gpDark text-xs font-bold";
+      }
+    }
+
+    function handleSearch(val) {
+      searchQuery = val.trim().toLowerCase();
+      const clearBtn = document.getElementById("clearSearchBtn");
+      if (searchQuery) {
+        clearBtn.classList.remove("hidden");
+      } else {
+        clearBtn.classList.add("hidden");
+      }
+      renderShops();
+    }
+
+    function clearSearch() {
+      document.getElementById("searchInput").value = "";
+      searchQuery = "";
+      document.getElementById("clearSearchBtn").classList.add("hidden");
+      renderShops();
+    }
+
+    function sortShopsByDistance() {
+      if (!currentLiveLocation) {
+        showToast("আপনার বর্তমান জিপিএস লোকেশন নেওয়া হচ্ছে, একটু অপেক্ষা করুন...", "info");
+        refreshLiveGPS(true);
+        return;
+      }
+      dokanList.sort((a, b) => {
+        const distA = calculateDistance(currentLiveLocation.lat, currentLiveLocation.lng, a.lat, a.lng) || 999999;
+        const distB = calculateDistance(currentLiveLocation.lat, currentLiveLocation.lng, b.lat, b.lng) || 999999;
+        return distA - distB;
+      });
+      showToast("সবচেয়ে কাছের দোকানগুলো ক্রমানুসারে সাজানো হয়েছে!", "success");
+      renderShops();
+    }
+
+    function renderShops() {
+      const container = document.getElementById("shopsContainer");
+      const emptyState = document.getElementById("emptyState");
+      const shopCountBadge = document.getElementById("shopCountBadge");
+
+      // Filter by Route
+      let list = dokanList.filter(shop => {
+        if (currentRouteFilter === 'all') return true;
+        return shop.route === currentRouteFilter;
+      });
+
+      // Filter by Search
+      if (searchQuery) {
+        list = list.filter(s => 
+          (s.name && s.name.toLowerCase().includes(searchQuery)) ||
+          (s.owner && s.owner.toLowerCase().includes(searchQuery)) ||
+          (s.phone && s.phone.includes(searchQuery)) ||
+          (s.notes && s.notes.toLowerCase().includes(searchQuery))
+        );
+      }
+
+      shopCountBadge.innerText = `${list.length} টি দোকান`;
+
+      if (list.length === 0) {
+        container.innerHTML = "";
+        emptyState.classList.remove("hidden");
+        return;
+      }
+
+      emptyState.classList.add("hidden");
+
+      let html = "";
+      list.forEach((shop, index) => {
+        // Distance calculation
+        let distanceText = "";
+        if (currentLiveLocation && shop.lat && shop.lng) {
+          const d = calculateDistance(currentLiveLocation.lat, currentLiveLocation.lng, shop.lat, shop.lng);
+          distanceText = `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-gpBlue bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+            <i class="fa-solid fa-person-walking text-[10px]"></i> ${formatDistance(d)}
+          </span>`;
+        }
+
+        const routeLabel = shop.route === 'routeA' 
+          ? `<span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">রুট ১ (শোকলার হাট-চৌধুরী মার্কেট)</span>`
+          : `<span class="text-[10px] bg-cyan-50 text-gpDark px-2 py-0.5 rounded font-medium">রুট ২ (জোড়বটতল-বাদামতলী)</span>`;
+
+        const googleMapsLink = (shop.lat && shop.lng)
+          ? `https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lng}`
+          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.name)}`;
+
+        html += `
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 hover:shadow-md transition">
+            <!-- Top info bar -->
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                  ${routeLabel}
+                  ${distanceText}
+                </div>
+                <h3 class="text-sm font-bold text-slate-900 leading-snug">${shop.name}</h3>
+                <p class="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
+                  <i class="fa-solid fa-user-tie text-[11px] text-slate-400"></i>
+                  <span>${shop.owner || "মালিকের নাম নেই"}</span>
+                  <span class="text-slate-300">•</span>
+                  <span class="font-mono text-slate-700 font-medium">${shop.phone}</span>
+                </p>
+              </div>
+
+              <!-- Menu Actions -->
+              <div class="flex items-center space-x-1">
+                <button onclick="openEditShopModal('${shop.id}')" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition" title="এডিট করুন">
+                  <i class="fa-solid fa-pen"></i>
+                </button>
+                <button onclick="deleteShop('${shop.id}')" class="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center text-xs transition" title="মুছে ফেলুন">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Notes Section if any -->
+            ${shop.notes ? `
+              <div class="mt-2.5 p-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600 flex items-start gap-1.5">
+                <i class="fa-solid fa-note-sticky text-amber-500 mt-0.5"></i>
+                <span class="leading-relaxed">${shop.notes}</span>
+              </div>
+            ` : ''}
+
+            <!-- GPS Precision Metadata -->
+            <div class="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-100">
+              <span class="flex items-center gap-1 font-mono">
+                <i class="fa-solid fa-location-pin text-gpBlue"></i>
+                ${shop.lat ? `${shop.lat.toFixed(5)}, ${shop.lng.toFixed(5)} (±${shop.accuracy ? Math.round(shop.accuracy) : 5}m)` : "জিপিএস অফলাইন"}
+              </span>
+              <span class="text-[10px] text-slate-400">সিরিয়াল: #${index + 1}</span>
+            </div>
+
+            <!-- Direct Action Buttons: Call & Google Maps Navigation -->
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <a href="tel:${shop.phone}" class="flex items-center justify-center gap-1.5 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition active:scale-95">
+                <i class="fa-solid fa-phone"></i>
+                <span>কল দিন</span>
+              </a>
+
+              <a href="${googleMapsLink}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-1.5 py-2 px-3 bg-gpBlue hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition active:scale-95">
+                <i class="fa-solid fa-diamond-turn-right"></i>
+                <span>ম্যাপে যান</span>
+              </a>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function openAddShopModal() {
+      document.getElementById("modalTitle").innerText = "নতুন দোকান যোগ করুন";
+      document.getElementById("saveButtonLabel").innerText = "দোকান সেভ করুন";
+      document.getElementById("editShopId").value = "";
+      document.getElementById("shopForm").reset();
+
+      // Set default route based on active filter
+      const defaultRoute = (currentRouteFilter === 'routeB') ? 'routeB' : 'routeA';
+      const radios = document.getElementsByName("modalRoute");
+      radios.forEach(r => r.checked = (r.value === defaultRoute));
+
+      // Reset GPS fields
+      resetModalGPSUI();
+
+      // Automatically capture current GPS when opening modal
+      captureFormLocation();
+
+      document.getElementById("shopModal").classList.remove("hidden");
+    }
+
+    function openEditShopModal(shopId) {
+      const shop = dokanList.find(s => s.id === shopId);
+      if (!shop) return;
+
+      document.getElementById("modalTitle").innerText = "দোকানের তথ্য এডিট করুন";
+      document.getElementById("saveButtonLabel").innerText = "আপডেট সংরক্ষণ করুন";
+      document.getElementById("editShopId").value = shop.id;
+
+      document.getElementById("shopNameInput").value = shop.name || "";
+      document.getElementById("ownerNameInput").value = shop.owner || "";
+      document.getElementById("phoneNumberInput").value = shop.phone || "";
+      document.getElementById("notesInput").value = shop.notes || "";
+
+      // Route
+      const radios = document.getElementsByName("modalRoute");
+      radios.forEach(r => r.checked = (r.value === shop.route));
+
+      // Coordinates
+      document.getElementById("formLat").value = shop.lat || "";
+      document.getElementById("formLng").value = shop.lng || "";
+      document.getElementById("formAccuracy").value = shop.accuracy || "";
+
+      if (shop.lat && shop.lng) {
+        document.getElementById("modalGpsAccuracy").innerHTML = `<span class="text-emerald-600 font-bold">সংরক্ষিত (±${Math.round(shop.accuracy || 4)}m)</span>`;
+        document.getElementById("modalGpsLat").innerText = shop.lat.toFixed(6);
+        document.getElementById("modalGpsLng").innerText = shop.lng.toFixed(6);
+      } else {
+        resetModalGPSUI();
+      }
+
+      document.getElementById("shopModal").classList.remove("hidden");
+    }
+
+    function closeShopModal() {
+      document.getElementById("shopModal").classList.add("hidden");
+    }
+
+    function resetModalGPSUI() {
+      document.getElementById("formLat").value = "";
+      document.getElementById("formLng").value = "";
+      document.getElementById("formAccuracy").value = "";
+      document.getElementById("modalGpsAccuracy").innerHTML = `<span class="text-amber-500 font-medium">জিপিএস লোড হচ্ছে...</span>`;
+      document.getElementById("modalGpsLat").innerText = "-";
+      document.getElementById("modalGpsLng").innerText = "-";
+    }
+
+    function captureFormLocation() {
+      const icon = document.getElementById("captureGpsIcon");
+      if (icon) icon.classList.add("fa-spin");
+
+      const accLabel = document.getElementById("modalGpsAccuracy");
+      accLabel.innerHTML = `<span class="text-blue-600 font-semibold flex items-center gap-1"><i class="fa-solid fa-spinner fa-spin"></i> নিখুঁত জিপিএস সার্চ করা হচ্ছে...</span>`;
+
+      if (!navigator.geolocation) {
+        accLabel.innerHTML = `<span class="text-rose-500">জিপিএস কাজ করছে না</span>`;
+        if (icon) icon.classList.remove("fa-spin");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const acc = pos.coords.accuracy;
+
+          document.getElementById("formLat").value = lat;
+          document.getElementById("formLng").value = lng;
+          document.getElementById("formAccuracy").value = acc;
+
+          document.getElementById("modalGpsLat").innerText = lat.toFixed(6);
+          document.getElementById("modalGpsLng").innerText = lng.toFixed(6);
+          document.getElementById("modalGpsAccuracy").innerHTML = `
+            <span class="text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded">
+              ±${Math.round(acc)} মিটার একুরেসি (লকড 🎯)
+            </span>
+          `;
+
+          if (icon) icon.classList.remove("fa-spin");
+          showToast(`জিপিএস লক সফল! একুরেসি: ±${Math.round(acc)} মিটার`, "success");
+        },
+        (err) => {
+          if (icon) icon.classList.remove("fa-spin");
+          accLabel.innerHTML = `<span class="text-rose-500">জিপিএস সিগন্যাল পাওয়া যায়নি</span>`;
+          showToast("দয়া করে মোবাইলের লোকেশন (GPS) চালু করুন ও পারমিশন দিন।", "error");
+        },
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+      );
+    }
+
+    function handleSaveShop(event) {
+      event.preventDefault();
+
+      const editId = document.getElementById("editShopId").value;
+      const name = document.getElementById("shopNameInput").value.trim();
+      const owner = document.getElementById("ownerNameInput").value.trim();
+      const phone = document.getElementById("phoneNumberInput").value.trim();
+      const notes = document.getElementById("notesInput").value.trim();
+
+      const selectedRoute = document.querySelector('input[name="modalRoute"]:checked').value;
+      const latVal = parseFloat(document.getElementById("formLat").value);
+      const lngVal = parseFloat(document.getElementById("formLng").value);
+      const accVal = parseFloat(document.getElementById("formAccuracy").value) || 5;
+
+      if (!name || !phone) {
+        showToast("দোকানের নাম এবং মোবাইল নম্বর আবশ্যক!", "error");
+        return;
+      }
+
+      if (editId) {
+        // Edit Existing
+        const index = dokanList.findIndex(s => s.id === editId);
+        if (index !== -1) {
+          dokanList[index] = {
+            ...dokanList[index],
+            name,
+            owner,
+            phone,
+            route: selectedRoute,
+            notes,
+            lat: isNaN(latVal) ? dokanList[index].lat : latVal,
+            lng: isNaN(lngVal) ? dokanList[index].lng : lngVal,
+            accuracy: isNaN(accVal) ? dokanList[index].accuracy : accVal,
+            updatedAt: new Date().toISOString()
+          };
+          showToast("দোকানের তথ্য সফলভাবে আপডেট হয়েছে!", "success");
+        }
+      } else {
+        // Add New Shop
+        const newShop = {
+          id: "shop_" + Date.now(),
+          name,
+          owner,
+          phone,
+          route: selectedRoute,
+          notes,
+          lat: isNaN(latVal) ? (currentLiveLocation ? currentLiveLocation.lat : 22.585) : latVal,
+          lng: isNaN(lngVal) ? (currentLiveLocation ? currentLiveLocation.lng : 91.685) : lngVal,
+          accuracy: isNaN(accVal) ? (currentLiveLocation ? currentLiveLocation.accuracy : 5) : accVal,
+          updatedAt: new Date().toISOString()
+        };
+        dokanList.unshift(newShop);
+        showToast("নতুন দোকান সফলভাবে যুক্ত হয়েছে!", "success");
+      }
+
+      closeShopModal();
+      renderShops();
+    }
+
+    function deleteShop(shopId) {
+      const shop = dokanList.find(s => s.id === shopId);
+      const name = shop ? shop.name : "দোকানটি";
+
+      // Non-blocking custom confirmation
+      showConfirmationModal(
+        `আপনি কি নিশ্চিত '${name}' মুছে ফেলতে চান?`,
+        () => {
+          dokanList = dokanList.filter(s => s.id !== shopId);
+          showToast("দোকানটি মুছে ফেলা হয়েছে।", "info");
+          renderShops();
+        }
+      );
+    }
+
+    function openBackupModal() {
+      document.getElementById("backupModal").classList.remove("hidden");
+    }
+
+    function closeBackupModal() {
+      document.getElementById("backupModal").classList.add("hidden");
+    }
+
+    // Export to CSV compatible with Excel and Google Sheets
+    function exportToCSV() {
+      if (dokanList.length === 0) {
+        showToast("এক্সপোর্ট করার মতো কোনো দোকান নেই!", "error");
+        return;
+      }
+
+      let csvContent = "\uFEFF"; // UTF-8 BOM for Bengali font in Excel
+      csvContent += "Serial,Shop Name,Owner Name,Phone Number,Route,Latitude,Longitude,Accuracy (m),Google Maps Link,Notes\n";
+
+      dokanList.forEach((s, idx) => {
+        const routeTitle = s.route === 'routeA' ? "শোকলার হাট - চৌধুরী মার্কেট" : "জোড়বটতল - বাদামতলী";
+        const mapUrl = s.lat && s.lng ? `https://www.google.com/maps?q=${s.lat},${s.lng}` : "";
+        const cleanName = `"${(s.name || "").replace(/"/g, '""')}"`;
+        const cleanOwner = `"${(s.owner || "").replace(/"/g, '""')}"`;
+        const cleanNotes = `"${(s.notes || "").replace(/"/g, '""')}"`;
+
+        csvContent += `${idx + 1},${cleanName},${cleanOwner},'${s.phone},"${routeTitle}",${s.lat || ''},${s.lng || ''},${s.accuracy || ''},"${mapUrl}",${cleanNotes}\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const dateStr = new Date().toISOString().slice(0, 10);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `GP_SR_Dokan_List_${dateStr}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast("CSV ফাইল ডাউনলোড সম্পন্ন হয়েছে!", "success");
+      closeBackupModal();
+    }
+
+    // Export complete data to JSON backup
+    function exportToJSON() {
+      if (dokanList.length === 0) {
+        showToast("ব্যাকআপ করার কোনো ডাটা নেই!", "error");
+        return;
+      }
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dokanList, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      const dateStr = new Date().toISOString().slice(0, 10);
+      downloadAnchor.setAttribute("download", `GP_SR_Dokan_Backup_${dateStr}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+
+      showToast("JSON ব্যাকআপ ফাইল সেভ হয়েছে!", "success");
+      closeBackupModal();
+    }
+
+    // Import from JSON backup
+    function importFromJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported)) {
+            dokanList = imported;
+            renderShops();
+            showToast(`${dokanList.length} টি দোকানের ডাটা সফলভাবে রিস্টোর হয়েছে!`, "success");
+            closeBackupModal();
+          } else {
+            showToast("ভুল ফরম্যাটের ফাইল!", "error");
+          }
+        } catch (err) {
+          showToast("ফাইল পড়তে সমস্যা হয়েছে। সঠিক .json ফাইল দিন।", "error");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function showToast(message, type = "info") {
+      const toast = document.getElementById("toast");
+      const msg = document.getElementById("toastMsg");
+      const icon = document.getElementById("toastIcon");
+
+      msg.innerText = message;
+      
+      if (type === "success") {
+        icon.className = "fa-solid fa-circle-check text-emerald-400";
+      } else if (type === "error") {
+        icon.className = "fa-solid fa-circle-exclamation text-rose-400";
+      } else {
+        icon.className = "fa-solid fa-circle-info text-cyan-400";
+      }
+
+      toast.classList.remove("opacity-0", "-translate-y-2", "pointer-events-none");
+      toast.classList.add("opacity-100", "translate-y-0");
+
+      setTimeout(() => {
+        toast.classList.remove("opacity-100", "translate-y-0");
+        toast.classList.add("opacity-0", "-translate-y-2", "pointer-events-none");
+      }, 3200);
+    }
+
+    // Confirmation dialog replacement for window.confirm()
+    function showConfirmationModal(text, onConfirm) {
+      const existing = document.getElementById("customConfirmModal");
+      if (existing) existing.remove();
+
+      const modalHtml = `
+        <div id="customConfirmModal" class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl p-5 max-w-xs w-full shadow-2xl text-center space-y-3">
+            <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto text-xl">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h4 class="text-sm font-bold text-slate-800">নিশ্চিতকরণ</h4>
+            <p class="text-xs text-slate-600">${text}</p>
+            <div class="flex items-center space-x-2 pt-2">
+              <button onclick="document.getElementById('customConfirmModal').remove()" class="w-1/2 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition">না</button>
+              <button id="confirmYesBtn" class="w-1/2 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition">হ্যাঁ, মুছুন</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+      document.getElementById("confirmYesBtn").onclick = () => {
+        document.getElementById("customConfirmModal").remove();
+        if (typeof onConfirm === 'function') onConfirm();
+      };
+    }
+
+    window.onload = function() {
+      initDayAndRoute();
+      startGPSWatcher();
+      renderShops();
+    };
+  </script>
 </body>
 </html>
