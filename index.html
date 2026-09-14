@@ -436,6 +436,31 @@
   }
   .err.show { display: block; }
 
+  /* ── Distance badge ── */
+  .dist-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    margin-top: 8px;
+  }
+  .dist-icon { font-size: 14px; flex-shrink: 0; }
+  .dist-label { font-size: 11px; color: var(--gray-400); flex-shrink: 0; }
+  .dist-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--blue);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    margin-left: auto;
+  }
+  .dist-value.near { color: var(--green); }
+  .dist-value.mid  { color: var(--orange); }
+  .dist-value.far  { color: var(--gray-500); }
+  .dist-value.wait { color: var(--gray-400); font-size: 12px; font-weight: 400; font-family: inherit; }
+
   /* ── Day separator ── */
   .day-sep {
     font-size: 11px;
@@ -781,7 +806,12 @@ function switchTab(tab) {
     document.getElementById('section-' + t).classList.toggle('active', t === tab);
     document.getElementById('tab-' + t).classList.toggle('active', t === tab);
   });
-  if (tab === 'list') renderList();
+  if (tab === 'list') {
+    renderList();
+    startLiveDistance();
+  } else {
+    stopLiveDistance();
+  }
 }
 
 // ────────────────────────────────────────────────
@@ -966,46 +996,19 @@ function roadShortName(road) {
   return 'অন্যান্য';
 }
 
-function renderList() {
-  updateStats();
-  updateHeaderCount();
-
-  const todayKey = new Date().toISOString().slice(0,10);
-  let filtered = shops;
-  if (currentFilter === 'today') filtered = shops.filter(s => s.dateKey === todayKey);
-  else if (currentFilter !== 'all') filtered = shops.filter(s => s.road === currentFilter);
-
-  const listEl = document.getElementById('shop-list');
-  if (!filtered.length) {
-    listEl.innerHTML = `
-      <div class="empty-state">
-        <svg width="48" height="48" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24">
-          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-          <circle cx="12" cy="9" r="2.5"/>
-        </svg>
-        <p>কোনো দোকান পাওয়া যায়নি</p>
-      </div>`;
-    return;
-  }
-
-  // Group by dateKey
-  const groups = {};
-  filtered.forEach(s => {
-    if (!groups[s.dateKey]) groups[s.dateKey] = [];
-    groups[s.dateKey].push(s);
-  });
-
-  let html = '';
-  Object.keys(groups).sort((a,b) => b.localeCompare(a)).forEach(dk => {
-    const dayLabel = dk === todayKey ? 'আজকে' : groups[dk][0].dateStr;
-    html += `<div class="day-sep">📅 ${dayLabel} · ${groups[dk].length}টি দোকান</div>`;
-    groups[dk].forEach(s => {
-      const mapsUrl = `https://www.google.com/maps?q=${s.lat},${s.lon}&z=19`;
-      const shopNameSafe = escHtml(s.name).replace(/'/g, "\\'");
-      const callUrl = `tel:${s.number}`;
-      const acc = s.accuracy ? '±' + Math.round(s.accuracy) + 'মি' : '';
-      html += `
-<div class="shop-card">
+function shopCardHTML(s) {
+  const mapsUrl = `https://www.google.com/maps?q=${s.lat},${s.lon}&z=19`;
+  const shopNameSafe = escHtml(s.name).replace(/'/g, "\\'");
+  const callUrl = `tel:${s.number}`;
+  const acc = s.accuracy ? '±' + Math.round(s.accuracy) + 'মি' : '';
+  const distTxt = (liveLat !== null)
+    ? formatDist(haversine(liveLat, liveLon, s.lat, s.lon))
+    : 'GPS নেওয়া হচ্ছে...';
+  const distCls = (liveLat !== null)
+    ? distClass(haversine(liveLat, liveLon, s.lat, s.lon))
+    : 'wait';
+  return `
+<div class="shop-card" id="card-${s.id}">
   <div class="shop-top">
     <div class="shop-name">${escHtml(s.name)}</div>
     <div class="road-tag">${roadShortName(s.road)}</div>
@@ -1013,9 +1016,14 @@ function renderList() {
   <div class="shop-info">
     📞 <strong>${escHtml(s.number)}</strong>
     ${s.note ? '<br>📝 ' + escHtml(s.note) : ''}
-    <br>🕐 ${s.timeStr}
+    <br>🕐 ${s.timeStr} · ${s.dateStr}
   </div>
   <div class="shop-coords-small">📍 ${s.lat.toFixed(6)}, ${s.lon.toFixed(6)} ${acc}</div>
+  <div class="dist-badge">
+    <span class="dist-icon">🚶</span>
+    <span class="dist-label">আমার থেকে দূরত্ব</span>
+    <span class="dist-value ${distCls}" id="dist-val-${s.id}">${distTxt}</span>
+  </div>
   <div class="shop-actions">
     <button class="btn-maps" style="flex:1;padding:8px;display:flex;align-items:center;justify-content:center;gap:5px;" onclick="openMapSheet(${s.lat}, ${s.lon}, '${shopNameSafe}', '${mapsUrl}')">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
@@ -1030,9 +1038,79 @@ function renderList() {
     </button>
   </div>
 </div>`;
+}
+
+// Track last rendered order so we only re-render DOM when order changes
+let lastRenderedOrder = [];
+
+function getSortedFiltered() {
+  const todayKey = new Date().toISOString().slice(0,10);
+  let filtered = shops.slice();
+  if (currentFilter === 'today') filtered = filtered.filter(s => s.dateKey === todayKey);
+  else if (currentFilter !== 'all') filtered = filtered.filter(s => s.road === currentFilter);
+
+  if (liveLat !== null) {
+    // Sort by distance ascending — closest first
+    filtered.sort((a, b) =>
+      haversine(liveLat, liveLon, a.lat, a.lon) -
+      haversine(liveLat, liveLon, b.lat, b.lon)
+    );
+  } else {
+    // Fallback: newest first
+    filtered.sort((a, b) => b.timestamp - a.timestamp);
+  }
+  return filtered;
+}
+
+function renderList() {
+  updateStats();
+  updateHeaderCount();
+
+  const listEl = document.getElementById('shop-list');
+  const filtered = getSortedFiltered();
+
+  if (!filtered.length) {
+    lastRenderedOrder = [];
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <svg width="48" height="48" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+          <circle cx="12" cy="9" r="2.5"/>
+        </svg>
+        <p>কোনো দোকান পাওয়া যায়নি</p>
+      </div>`;
+    return;
+  }
+
+  const newOrder = filtered.map(s => s.id);
+  const orderChanged = newOrder.join(',') !== lastRenderedOrder.join(',');
+
+  if (orderChanged) {
+    // Full re-render — order changed
+    lastRenderedOrder = newOrder;
+    let html = '';
+    if (liveLat !== null) {
+      html += `<div class="day-sep" id="sort-label">📍 কাছের দোকান আগে · ${filtered.length}টি</div>`;
+    } else {
+      html += `<div class="day-sep" id="sort-label">🕐 সর্বশেষ যোগ · ${filtered.length}টি</div>`;
+    }
+    filtered.forEach(s => { html += shopCardHTML(s); });
+    listEl.innerHTML = html;
+  } else {
+    // Order same — only update distance text in place (no DOM rebuild)
+    filtered.forEach(s => {
+      const el = document.getElementById('dist-val-' + s.id);
+      if (!el) return;
+      if (liveLat !== null) {
+        const m = haversine(liveLat, liveLon, s.lat, s.lon);
+        el.textContent = formatDist(m);
+        el.className = 'dist-value ' + distClass(m);
+      }
     });
-  });
-  listEl.innerHTML = html;
+    // Update sort label
+    const lbl = document.getElementById('sort-label');
+    if (lbl && liveLat !== null) lbl.textContent = '📍 কাছের দোকান আগে · ' + filtered.length + 'টি';
+  }
 }
 
 function deleteShop(id) {
@@ -1049,6 +1127,73 @@ function escHtml(str) {
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;');
+}
+
+// ────────────────────────────────────────────────
+//  Live distance tracking
+// ────────────────────────────────────────────────
+let liveWatchId = null;
+let liveLat = null, liveLon = null;
+let distInterval = null;
+
+// Haversine formula — returns metres
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2)
+          + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180)
+          * Math.sin(dLon/2) * Math.sin(dLon/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function formatDist(m) {
+  if (m < 1000) return Math.round(m) + ' মিটার';
+  return (m / 1000).toFixed(2) + ' কি.মি.';
+}
+
+function distClass(m) {
+  if (m < 200)  return 'near';   // green  — very close
+  if (m < 1000) return 'mid';    // orange — within 1 km
+  return 'far';                   // gray   — far away
+}
+
+function updateAllDistances() {
+  if (liveLat === null) return;
+  // renderList handles both distance text update AND re-sorting efficiently
+  if (document.getElementById('section-list').classList.contains('active')) {
+    renderList();
+  }
+}
+
+function startLiveDistance() {
+  if (!navigator.geolocation) return;
+  if (liveWatchId !== null) return; // already running
+
+  liveWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      liveLat = pos.coords.latitude;
+      liveLon = pos.coords.longitude;
+      updateAllDistances();
+    },
+    () => {},
+    { enableHighAccuracy: true, timeout: 30000, maximumAge: 2000 }
+  );
+
+  // Also poll every second so the display feels live even if GPS update is slow
+  if (distInterval) clearInterval(distInterval);
+  distInterval = setInterval(updateAllDistances, 1000);
+}
+
+function stopLiveDistance() {
+  if (liveWatchId !== null) {
+    navigator.geolocation.clearWatch(liveWatchId);
+    liveWatchId = null;
+  }
+  if (distInterval) {
+    clearInterval(distInterval);
+    distInterval = null;
+  }
 }
 
 // ────────────────────────────────────────────────
