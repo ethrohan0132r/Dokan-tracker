@@ -445,6 +445,147 @@
     padding-left: 2px;
   }
   .day-sep:first-child { margin-top: 0; }
+
+  /* ── Map bottom sheet ── */
+  .sheet-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    align-items: flex-end;
+  }
+  .sheet-overlay.open { display: flex; }
+
+  .sheet {
+    background: var(--white);
+    width: 100%;
+    border-radius: 18px 18px 0 0;
+    overflow: hidden;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.22s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: var(--gray-200);
+    border-radius: 2px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
+
+  .sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid var(--gray-200);
+    flex-shrink: 0;
+  }
+  .sheet-title { font-size: 15px; font-weight: 600; color: var(--gray-900); }
+  .sheet-close {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: var(--gray-100);
+    color: var(--gray-500);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Map iframe */
+  .map-frame-wrap {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    background: var(--gray-100);
+    min-height: 300px;
+  }
+  .map-frame-wrap iframe {
+    width: 100%; height: 100%;
+    border: none;
+    display: block;
+  }
+  .map-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--gray-400);
+    pointer-events: none;
+  }
+  .map-spinner {
+    width: 28px; height: 28px;
+    border: 3px solid var(--gray-200);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Sheet action bar */
+  .sheet-actions {
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px 20px;
+    border-top: 1px solid var(--gray-200);
+    flex-shrink: 0;
+    background: var(--white);
+  }
+  .btn-sheet-gmaps {
+    flex: 1;
+    padding: 11px;
+    background: var(--blue);
+    border: none;
+    border-radius: var(--radius);
+    color: var(--white);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-sheet-gmaps:active { opacity: 0.85; }
+  .btn-sheet-close2 {
+    padding: 11px 16px;
+    background: var(--gray-100);
+    border: none;
+    border-radius: var(--radius);
+    color: var(--gray-600);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Shop card map button override */
+  .btn-maps {
+    cursor: pointer;
+    background: var(--green-light);
+    border: 1px solid #86efac;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--green);
+    -webkit-tap-highlight-color: transparent;
+  }
 </style>
 </head>
 <body>
@@ -559,6 +700,40 @@
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- Map Bottom Sheet -->
+<div class="sheet-overlay" id="map-overlay" onclick="closeMapSheet(event)">
+  <div class="sheet" id="map-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title" id="sheet-shop-name">দোকানের অবস্থান</div>
+      <button class="sheet-close" onclick="closeMapSheet()">✕</button>
+    </div>
+
+    <div class="map-frame-wrap" id="map-frame-wrap">
+      <div class="map-loading" id="map-loading">
+        <div class="map-spinner"></div>
+        <span>ম্যাপ লোড হচ্ছে...</span>
+      </div>
+      <iframe id="map-iframe" src="" allowfullscreen="" loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+        onload="document.getElementById('map-loading').style.display='none'">
+      </iframe>
+    </div>
+
+    <div class="sheet-actions">
+      <a class="btn-sheet-gmaps" id="sheet-gmaps-link" href="#" target="_blank">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+          <polyline points="15,3 21,3 21,9"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        Google Maps-এ খোলো
+      </a>
+      <button class="btn-sheet-close2" onclick="closeMapSheet()">বন্ধ করো</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ────────────────────────────────────────────────
@@ -826,6 +1001,7 @@ function renderList() {
     html += `<div class="day-sep">📅 ${dayLabel} · ${groups[dk].length}টি দোকান</div>`;
     groups[dk].forEach(s => {
       const mapsUrl = `https://www.google.com/maps?q=${s.lat},${s.lon}&z=19`;
+      const shopNameSafe = escHtml(s.name).replace(/'/g, "\\'");
       const callUrl = `tel:${s.number}`;
       const acc = s.accuracy ? '±' + Math.round(s.accuracy) + 'মি' : '';
       html += `
@@ -841,10 +1017,10 @@ function renderList() {
   </div>
   <div class="shop-coords-small">📍 ${s.lat.toFixed(6)}, ${s.lon.toFixed(6)} ${acc}</div>
   <div class="shop-actions">
-    <a class="btn-maps" href="${mapsUrl}" target="_blank">
+    <button class="btn-maps" style="flex:1;padding:8px;display:flex;align-items:center;justify-content:center;gap:5px;" onclick="openMapSheet(${s.lat}, ${s.lon}, '${shopNameSafe}', '${mapsUrl}')">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
-      Maps-এ দেখো
-    </a>
+      ম্যাপে দেখো
+    </button>
     <a class="btn-call" href="${callUrl}">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 014.09 11.5 19.79 19.79 0 011.05 2.8 2 2 0 013 .68h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L7.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
       কল করো
@@ -873,6 +1049,37 @@ function escHtml(str) {
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;');
+}
+
+// ────────────────────────────────────────────────
+//  Map bottom sheet
+// ────────────────────────────────────────────────
+function openMapSheet(lat, lon, name, gmapsUrl) {
+  document.getElementById('sheet-shop-name').textContent = name;
+  document.getElementById('sheet-gmaps-link').href = gmapsUrl;
+
+  // Reset loading indicator
+  document.getElementById('map-loading').style.display = 'flex';
+
+  // OpenStreetMap embed — no API key needed, works offline-ish
+  const zoom = 18;
+  const iframeSrc =
+    `https://www.openstreetmap.org/export/embed.html` +
+    `?bbox=${lon-0.002},${lat-0.002},${lon+0.002},${lat+0.002}` +
+    `&layer=mapnik` +
+    `&marker=${lat},${lon}`;
+
+  document.getElementById('map-iframe').src = iframeSrc;
+  document.getElementById('map-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMapSheet(e) {
+  // if clicking overlay background (not the sheet itself)
+  if (e && e.target !== document.getElementById('map-overlay')) return;
+  document.getElementById('map-overlay').classList.remove('open');
+  document.getElementById('map-iframe').src = '';
+  document.body.style.overflow = '';
 }
 
 // ────────────────────────────────────────────────
