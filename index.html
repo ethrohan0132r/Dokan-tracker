@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>দোকান ট্র্যাকার</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f4f8;
+    color: #1a1a2e;
+    min-height: 100vh;
+  }
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+  .header {
+    background: linear-gradient(135deg, #1565C0, #0D47A1);
+    color: white;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-icon { font-size: 28px; }
+  .header-title { font-size: 20px; font-weight: 600; }
+  .header-sub { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+
+  .tab-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1rem;
+    background: white;
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .tab {
+    flex: 1;
+    padding: 9px 4px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    font-size: 13px;
+    color: #555;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+  .tab.active {
+    background: #1565C0;
+    color: white;
+  }
+
+  .card {
+    background: white;
+    border-radius: 14px;
+    padding: 1.25rem;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  input[type=text] {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 14px;
+    margin-bottom: 10px;
+    outline: none;
+    transition: border-color 0.15s;
+    color: #1a1a2e;
+    background: #fafafa;
+  }
+  input[type=text]:focus { border-color: #1565C0; background: white; }
+
+  .btn-main {
+    width: 100%;
+    padding: 12px;
+    background: #1565C0;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.15s;
+  }
+  .btn-main:hover { background: #0D47A1; }
+  .btn-main:active { transform: scale(0.98); }
+
+  .hint {
+    font-size: 12px;
+    color: #888;
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  .status-bar {
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+  .status-ok { background: #E8F5E9; color: #2E7D32; border: 1px solid #C8E6C9; }
+  .status-loading { background: #E3F2FD; color: #1565C0; border: 1px solid #BBDEFB; }
+  .status-err { background: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; }
+
+  .err-msg {
+    background: #FFEBEE;
+    color: #C62828;
+    border: 1px solid #FFCDD2;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 10px;
+    display: none;
+  }
+
+  .shop-list { display: flex; flex-direction: column; gap: 8px; }
+  .shop-item {
+    background: white;
+    border: 1.5px solid #eee;
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    transition: box-shadow 0.15s;
+  }
+  .shop-item:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  .shop-item.nearby { border-color: #A5D6A7; background: #F1F8E9; }
+
+  .shop-avatar {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .shop-info { flex: 1; min-width: 0; }
+  .shop-name {
+    font-size: 14px; font-weight: 600; color: #1a1a2e;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .shop-note { font-size: 12px; color: #777; margin-top: 2px; }
+  .shop-dist-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 20px;
+  }
+  .badge-near { background: #C8E6C9; color: #1B5E20; }
+  .badge-mid  { background: #FFF9C4; color: #F57F17; }
+  .badge-far  { background: #FFCDD2; color: #B71C1C; }
+
+  .btn-del {
+    background: #FFEBEE; color: #C62828;
+    border: 1px solid #FFCDD2;
+    border-radius: 8px; font-size: 12px;
+    padding: 5px 10px; cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .btn-del:hover { background: #FFCDD2; }
+
+  .empty {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: #aaa;
+    font-size: 14px;
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 8px; }
+
+  @media (prefers-color-scheme: dark) {
+    body { background: #111827; color: #f0f0f0; }
+    .card, .shop-item { background: #1f2937; border-color: #374151; }
+    input[type=text] { background: #1f2937; border-color: #374151; color: #f0f0f0; }
+    .tab-row { background: #1f2937; }
+    .tab { color: #9ca3af; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-icon">📍</div>
+    <div>
+      <div class="header-title">দোকান ট্র্যাকার</div>
+      <div class="header-sub">GPS দিয়ে দোকান সেভ ও খুঁজুন</div>
+    </div>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab active" onclick="showTab('nearby')" id="tab-nearby">📡 কাছের</button>
+    <button class="tab" onclick="showTab('add')" id="tab-add">➕ যোগ করুন</button>
+    <button class="tab" onclick="showTab('all')" id="tab-all">📋 সব দোকান</button>
+  </div>
+
+  <!-- কাছের দোকান -->
+  <div id="view-nearby">
+    <div id="loc-status" class="status-bar status-loading">
+      ⏳ লোকেশন নেওয়া হচ্ছে...
+    </div>
+    <div id="nearby-list">
+      <div class="empty"><div class="empty-icon">🗺️</div>লোকেশন পেলে কাছের দোকান দেখাবে</div>
+    </div>
+  </div>
+
+  <!-- নতুন দোকান যোগ -->
+  <div id="view-add" style="display:none">
+    <div class="card">
+      <div class="card-title">🏪 নতুন দোকান যোগ করুন</div>
+      <input type="text" id="inp-name" placeholder="দোকানের নাম (যেমন: রহিম মোবাইল)" />
+      <input type="text" id="inp-note" placeholder="বাড়তি তথ্য (যেমন: বাজারের পাশে) — ঐচ্ছিক" />
+      <div id="add-err" class="err-msg"></div>
+      <button class="btn-main" onclick="saveShop()">
+        📍 এখানে আছি — দোকান সেভ করুন
+      </button>
+      <div class="hint">সেভ করার সময় আপনার GPS লোকেশন নেওয়া হবে</div>
+    </div>
+  </div>
+
+  <!-- সব দোকান -->
+  <div id="view-all" style="display:none">
+    <div id="all-list">
+      <div class="empty"><div class="empty-icon">🏪</div>এখনো কোনো দোকান নেই</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let shops = JSON.parse(localStorage.getItem('dokan_tracker_v1') || '[]');
+let userLat = null, userLon = null;
+
+const AVATARS = ['🏪','🛒','🏬','🏠','🏢','🏦'];
+const COLORS = [
+  {bg:'#E3F2FD',ico:'#1565C0'},
+  {bg:'#E8F5E9',ico:'#2E7D32'},
+  {bg:'#FFF3E0',ico:'#E65100'},
+  {bg:'#F3E5F5',ico:'#6A1B9A'},
+  {bg:'#FCE4EC',ico:'#880E4F'},
+  {bg:'#E0F7FA',ico:'#006064'},
+];
+
+function persist() { localStorage.setItem('dokan_tracker_v1', JSON.stringify(shops)); }
+
+function toRad(d) { return d * Math.PI / 180; }
+function calcDist(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+function fmtDist(m) {
+  if (m < 1000) return Math.round(m) + ' মি';
+  return (m/1000).toFixed(2) + ' কি.মি';
+}
+function badgeClass(m) {
+  if (m < 100) return 'badge-near';
+  if (m < 500) return 'badge-mid';
+  return 'badge-far';
+}
+
+function showTab(t) {
+  ['nearby','add','all'].forEach(v => {
+    document.getElementById('view-'+v).style.display = v===t ? 'block' : 'none';
+    document.getElementById('tab-'+v).className = 'tab' + (v===t ? ' active' : '');
+  });
+  if (t === 'all') renderAll();
+  if (t === 'nearby') renderNearby();
+}
+
+function shopCard(s, i, showDel, distM) {
+  const c = COLORS[i % COLORS.length];
+  const av = AVATARS[i % AVATARS.length];
+  const distBadge = distM !== undefined
+    ? `<span class="badge ${badgeClass(distM)}">📍 ${fmtDist(distM)}</span>`
+    : '';
+  const del = showDel
+    ? `<button class="btn-del" onclick="delShop(${i})">🗑️</button>`
+    : '';
+  const nearClass = (distM !== undefined && distM < 150) ? ' nearby' : '';
+  return `
+    <div class="shop-item${nearClass}">
+      <div class="shop-avatar" style="background:${c.bg};color:${c.ico}">${av}</div>
+      <div class="shop-info">
+        <div class="shop-name">${s.name}</div>
+        ${s.note ? `<div class="shop-note">${s.note}</div>` : ''}
+        <div class="shop-dist-row">${distBadge}</div>
+      </div>
+      ${del}
+    </div>`;
+}
+
+function renderNearby() {
+  const el = document.getElementById('nearby-list');
+  if (!shops.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">➕</div>আগে কিছু দোকান যোগ করুন</div>';
+    return;
+  }
+  if (userLat === null) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📡</div>লোকেশন পেলে দেখাবে...</div>';
+    return;
+  }
+  const sorted = shops
+    .map((s,i) => ({...s, idx:i, d: calcDist(userLat, userLon, s.lat, s.lon)}))
+    .sort((a,b) => a.d - b.d);
+  el.innerHTML = '<div class="shop-list">' +
+    sorted.map(s => shopCard(s, s.idx, false, s.d)).join('') +
+    '</div>';
+}
+
+function renderAll() {
+  const el = document.getElementById('all-list');
+  if (!shops.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div>এখনো কোনো দোকান নেই</div>';
+    return;
+  }
+  const dist = (s) => userLat !== null ? calcDist(userLat, userLon, s.lat, s.lon) : undefined;
+  el.innerHTML = '<div class="shop-list">' +
+    shops.map((s,i) => shopCard(s, i, true, dist(s))).join('') +
+    '</div>';
+}
+
+function delShop(i) {
+  if (!confirm('"' + shops[i].name + '" মুছে ফেলবেন?')) return;
+  shops.splice(i, 1);
+  persist();
+  renderAll();
+}
+
+function saveShop() {
+  const name = document.getElementById('inp-name').value.trim();
+  const note = document.getElementById('inp-note').value.trim();
+  const errEl = document.getElementById('add-err');
+  if (!name) {
+    errEl.textContent = '⚠️ দোকানের নাম লিখুন';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  navigator.geolocation.getCurrentPosition(pos => {
+    shops.push({
+      name,
+      note,
+      lat: pos.coords.latitude,
+      lon: pos.coords.longitude,
+      acc: Math.round(pos.coords.accuracy),
+      saved: new Date().toLocaleString('bn-BD')
+    });
+    persist();
+    document.getElementById('inp-name').value = '';
+    document.getElementById('inp-note').value = '';
+    alert('✅ "' + name + '" সফলভাবে সেভ হয়েছে!');
+    showTab('nearby');
+  }, err => {
+    let msg = '⚠️ লোকেশন পাওয়া যাচ্ছে না।';
+    if (err.code === 1) msg += ' ব্রাউজারে লোকেশন অনুমতি দিন।';
+    else if (err.code === 2) msg += ' GPS সিগনাল নেই।';
+    else if (err.code === 3) msg += ' সময় শেষ হয়ে গেছে। আবার চেষ্টা করুন।';
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+}
+
+// GPS watch
+navigator.geolocation.watchPosition(pos => {
+  userLat = pos.coords.latitude;
+  userLon = pos.coords.longitude;
+  const acc = Math.round(pos.coords.accuracy);
+  const st = document.getElementById('loc-status');
+  st.className = 'status-bar status-ok';
+  st.innerHTML = '✅ লোকেশন পাওয়া গেছে &nbsp;|&nbsp; নির্ভুলতা: ±' + acc + ' মি';
+  renderNearby();
+}, err => {
+  const st = document.getElementById('loc-status');
+  st.className = 'status-bar status-err';
+  if (err.code === 1)
+    st.innerHTML = '❌ লোকেশন অনুমতি নেই — ব্রাউজারে অনুমতি দিন';
+  else
+    st.innerHTML = '❌ লোকেশন পাওয়া যাচ্ছে না';
+}, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+</script>
+</body>
+</html>
